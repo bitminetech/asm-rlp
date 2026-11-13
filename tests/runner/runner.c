@@ -51,6 +51,10 @@ static const char *const fn_name[F_COUNT] = {"rlp_decode", "rlp_encode_size", "r
 static volatile uint64_t *paint_low;
 static uint64_t stack_peak[F_COUNT], stack_calls[F_COUNT];
 
+/* The functions that the cases of each file kind test, and the files that tested each function. */
+static const int kind_tests[3][F_COUNT] = {{0}, {1, 1, 1}, {1, 0, 0}};
+static uint64_t fn_files[F_COUNT], fn_failed_files[F_COUNT];
+
 __attribute__((noinline)) static void paint(void) {
     volatile uint64_t area[PAINT_WORDS];
     for (size_t i = 0; i < PAINT_WORDS; i++) area[i] = PAINT_VALUE;
@@ -320,6 +324,10 @@ static int run_file(const char *dir, const char *name) {
         exit(2);
     }
     uint64_t kind = take64(&c), ncases = take64(&c), bad = 0;
+    if (kind != 1 && kind != 2) {
+        fprintf(stderr, "%s: unknown kind\n", name);
+        exit(2);
+    }
     for (uint64_t k = 0; k < ncases; k++) {
         uint64_t nlen = take64(&c);
         const char *cname = (const char *)take(&c, nlen);
@@ -347,6 +355,11 @@ static int run_file(const char *dir, const char *name) {
     }
     printf("%s %s: %llu cases, %llu failed\n", bad ? "FAIL" : "PASS", name, (unsigned long long)ncases,
            (unsigned long long)bad);
+    for (int fn = 0; fn < F_COUNT; fn++) {
+        if (!kind_tests[kind][fn]) continue;
+        fn_files[fn]++;
+        if (bad) fn_failed_files[fn]++;
+    }
     free(data);
     return bad != 0;
 }
@@ -364,6 +377,10 @@ int main(int argc, char **argv) {
         printf("%s stack %s: %llu bytes, cap %d\n", over ? "FAIL" : "PASS", fn_name[fn],
                (unsigned long long)stack_peak[fn], STACK_CAP);
         failed |= over;
+        if (over) fn_failed_files[fn]++;
     }
+    /* One verdict for each function: every file that tests it passed, within the stack cap. */
+    for (int fn = 0; fn < F_COUNT; fn++)
+        printf("FUNCTION %s %s\n", fn_name[fn], fn_files[fn] && !fn_failed_files[fn] ? "PASS" : "FAIL");
     return failed;
 }

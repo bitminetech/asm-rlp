@@ -32,6 +32,7 @@ Standard: [asm-standard@2a19d3f](https://github.com/bitminetech/asm-standard/blo
 
 | Item | Location |
 |---|---|
+| Export and frame check | [platform/check.py](platform/check.py) |
 | Vector generator | [tests/generator/](tests/generator/) |
 | Test runner | [tests/runner/](tests/runner/) |
 | Bench | [bench/](bench/) |

@@ -1,7 +1,8 @@
-# Generate the vectors and build every target with the pinned toolchain, then
-# run every vector file and the bench on each of the 7 supported targets
-# (ARCHITECTURE.md sections 1, 9 and 10). RISC-V runs under QEMU, so its bench
-# run only checks that the bench works.
+# Generate the vectors, build every target with the pinned toolchain and check
+# each library against the declared interface and frame rules, then run every
+# vector file and the bench on each of the 7 supported targets, and write the
+# tick tables (ARCHITECTURE.md sections 1, 4, 7, 9 and 10). RISC-V runs under
+# QEMU, so its bench run only checks that the bench works.
 name: ci
 
 on:
@@ -18,7 +19,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
       - name: Generate vectors
         run: tests/generator/run.sh "$RUNNER_TEMP/vectors"
-      - name: Build all targets
+      - name: Build and check all targets
         run: docker run --rm -v "$PWD:/src" asm-rlp-build platform/build-all.sh
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         with:
@@ -52,8 +53,14 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y qemu-user
       - name: Run vectors
         run: |
+          set -o pipefail
           chmod +x build/linux-${{ matrix.isa }}/runner
-          ${{ matrix.qemu }} build/linux-${{ matrix.isa }}/runner vectors $(cd vectors && ls *.bin)
+          ${{ matrix.qemu }} build/linux-${{ matrix.isa }}/runner vectors $(cd vectors && ls *.bin) | tee results-linux-${{ matrix.isa }}.txt
+      - if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        with:
+          name: results-linux-${{ matrix.isa }}
+          path: results-linux-${{ matrix.isa }}.txt
       - name: Bench
         run: |
           set -o pipefail
@@ -82,8 +89,13 @@ jobs:
         shell: pwsh
         run: |
           $files = Get-ChildItem vectors -Filter *.bin | ForEach-Object { $_.Name }
-          & "build/windows-${{ matrix.isa }}/runner.exe" vectors @files
+          & "build/windows-${{ matrix.isa }}/runner.exe" vectors @files | Tee-Object results-windows-${{ matrix.isa }}.txt
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        with:
+          name: results-windows-${{ matrix.isa }}
+          path: results-windows-${{ matrix.isa }}.txt
       - name: Bench
         shell: pwsh
         run: |
@@ -110,7 +122,14 @@ jobs:
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
         with: { name: vectors, path: vectors }
       - name: Run vectors
-        run: tests/runner/macos.sh vectors
+        run: |
+          set -o pipefail
+          tests/runner/macos.sh vectors | tee results-macos-${{ matrix.isa }}.txt
+      - if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        with:
+          name: results-macos-${{ matrix.isa }}
+          path: results-macos-${{ matrix.isa }}.txt
       - name: Bench
         run: |
           set -o pipefail
@@ -119,3 +138,34 @@ jobs:
         with:
           name: bench-macos-${{ matrix.isa }}
           path: bench-macos-${{ matrix.isa }}.txt
+
+  # Write the tick tables into docs/reference/ from the results of every target.
+  # On a push to main, commit them when they changed. When main has moved on,
+  # the push is skipped: the newer run writes the tables then.
+  results:
+    needs: [build, linux, windows, macos]
+    if: always()
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
+        continue-on-error: true
+        with: { pattern: results-*, path: results, merge-multiple: true }
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
+        continue-on-error: true
+        with: { name: build, path: build }
+      - name: Write the tick tables
+        run: python3 -I tests/runner/tick_tables.py results build
+      - name: Commit the tick tables
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          git add docs/reference
+          if git diff --cached --quiet; then echo "The tick tables did not change."; exit 0; fi
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+              commit -q -m "Update the tick tables"
+          if ! git push origin HEAD:main; then
+            [ "$(git ls-remote origin refs/heads/main | cut -f1)" != "$GITHUB_SHA" ] || exit 1
+            echo "main has moved on, so this run does not update the tick tables."
+          fi
