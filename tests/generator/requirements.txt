@@ -1,0 +1,4 @@
+ethereum-rlp==0.1.6 --hash=sha256:f4144caa96b975720c62b967bbfd6c98601e95ee3c36457ece11ef4ce0cffa04
+ethereum-types==0.4.1 --hash=sha256:33de3e2a0c0e57ea1b67802485de556b92d557aae7c8c640070800f2b4f639e3
+mypy_extensions==1.1.0 --hash=sha256:1be4cccdb0f2482337c4743e60421de3a356cd97508abadd57d47403e94f5505
+typing_extensions==4.15.0 --hash=sha256:f0fa19c6845758ab08074a0cfa8b7aecb71c999ca73d62883bc25cc018c4e548
