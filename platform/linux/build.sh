@@ -22,7 +22,7 @@ mv "$out/libasm-rlp.a.new" "$out/libasm-rlp.a"
 
 # Test runner (C), linked statically so QEMU user mode needs no target libraries.
 clang --target=$target $march -std=c11 -O2 -Wall -Wextra -Werror -static -fuse-ld=lld \
-    "$root/tests/runner/runner.c" "$out/libasm-rlp.a" -o "$out/runner"
+    "$root/tests/runner/runner.c" -I"$root/platform/linux" "$root/tests/runner/abi_$isa.s" "$out/libasm-rlp.a" -o "$out/runner"
 
 # Bench (C), linked the same way.
 clang --target=$target $march -std=c11 -O2 -Wall -Wextra -Werror -static -fuse-ld=lld \

@@ -14,4 +14,4 @@ case "$isa" in
 esac
 
 clang -arch $arch -mmacosx-version-min=11.0 -std=c11 -O2 -Wall -Wextra -Werror \
-    "$root/tests/runner/runner.c" "$out/libasm-rlp.a" -o "$out/runner"
+    "$root/tests/runner/runner.c" -I"$root/platform/macos" "$root/tests/runner/abi_$isa.s" "$out/libasm-rlp.a" -o "$out/runner"

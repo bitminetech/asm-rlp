@@ -11,8 +11,9 @@
  * bytes after it, and output buffers start filled with 0xA5, so a write out of
  * bounds or a read of old output contents shows up as a failure.
  *
- * Every library call also runs on a painted stack. The runner prints the most
- * stack each function used and fails when a call uses more than the README cap.
+ * Every library call goes through abi_call (tests/runner/abi_<ISA>.s). The
+ * runner prints the most stack each function used, and fails when a call uses
+ * more than the README cap or changes state that the ABI says it must keep.
  */
 #include <stdint.h>
 #include <stdio.h>
@@ -37,41 +38,45 @@ enum { KIND_BYTES = 1, KIND_LIST = 2 };
 #define FILL 0xA5
 
 /*
- * Stack check. paint() fills the stack below the caller with a pattern, then
- * the library call runs in that area, then stack_check() finds the lowest word
- * the call changed. The count starts at the top of the painted area, so it
- * leaves out the few bytes of paint's own frame above it.
+ * ABI and stack check. abi_call sets every register the callee must keep to a
+ * known value and paints PAINT_BYTES of stack below the call. Afterwards it
+ * reports the kept state that changed, and the bytes of stack the call used,
+ * its return address included on x86-64.
  */
 #define STACK_CAP 128 /* README: stack per call */
-#define PAINT_WORDS ((STACK_CAP + 4096) / 8)
-#define PAINT_VALUE 0x5A5A5A5A5A5A5A5AULL
+#define PAINT_BYTES (STACK_CAP + 4096)
+
+/* The record that abi_call reads and writes. The layout is in README.md. */
+typedef struct {
+    uint64_t fn, arg[5], paint, status, fault, stack, scratch[4];
+} abi_ctx;
+RLP_ABI void abi_call(abi_ctx *ctx);
 
 enum { F_DECODE, F_ENCODE_SIZE, F_ENCODE, F_COUNT };
 static const char *const fn_name[F_COUNT] = {"rlp_decode", "rlp_encode_size", "rlp_encode"};
-static volatile uint64_t *paint_low;
-static uint64_t stack_peak[F_COUNT], stack_calls[F_COUNT];
+static uint64_t stack_peak[F_COUNT], stack_calls[F_COUNT], abi_fault[F_COUNT];
 
 /* The functions that the cases of each file kind test, and the files that tested each function. */
 static const int kind_tests[3][F_COUNT] = {{0}, {1, 1, 1}, {1, 0, 0}};
 static uint64_t fn_files[F_COUNT], fn_failed_files[F_COUNT];
 
-__attribute__((noinline)) static void paint(void) {
-    volatile uint64_t area[PAINT_WORDS];
-    for (size_t i = 0; i < PAINT_WORDS; i++) area[i] = PAINT_VALUE;
-    paint_low = area;
-}
-
-__attribute__((noinline)) static uint64_t stack_check(int fn, uint64_t status) {
-    size_t i = 0;
-    while (i < PAINT_WORDS && paint_low[i] == PAINT_VALUE) i++;
-    uint64_t used = 8 * (uint64_t)(PAINT_WORDS - i);
-    if (used > stack_peak[fn]) stack_peak[fn] = used;
+/* Call the library function f with its pointer arguments, through abi_call. */
+static uint64_t checked_call(int fn, uint64_t f, const void *const *args, size_t n) {
+    abi_ctx c;
+    memset(&c, 0, sizeof c);
+    c.fn = f;
+    for (size_t i = 0; i < n; i++) c.arg[i] = (uint64_t)(uintptr_t)args[i];
+    c.paint = PAINT_BYTES;
+    abi_call(&c);
+    if (c.stack > stack_peak[fn]) stack_peak[fn] = c.stack;
     stack_calls[fn]++;
-    return status;
+    abi_fault[fn] |= c.fault;
+    return c.status;
 }
 
-/* Call the library function fn with a stack check. */
-#define CALL(fn, call) (paint(), stack_check(fn, call))
+#define CALL(fn, f, ...)                                                                                       \
+    checked_call(fn, (uint64_t)(uintptr_t)(f), (const void *const[]){__VA_ARGS__},                             \
+                 sizeof((const void *const[]){__VA_ARGS__}) / sizeof(const void *))
 
 static uint64_t rd64(const uint8_t *p) {
     uint64_t v = 0;
@@ -151,7 +156,7 @@ static int check_encode(const uint8_t *items, uint64_t n, const uint8_t *data, c
     uint64_t ssize, size = 0, st;
     uint8_t *scr = scratch_buffer(n, &ssize);
     int ok = 0;
-    st = CALL(F_ENCODE_SIZE, rlp_encode_size(items, data, scr, &size));
+    st = CALL(F_ENCODE_SIZE, rlp_encode_size, items, data, scr, &size);
     if (st != RLP_OK) snprintf(why_text, sizeof why_text, "%s: encode_size status %llu", variant, (unsigned long long)st);
     else if (size != 24 + len) snprintf(why_text, sizeof why_text, "%s: encode_size gave %llu, expected %llu", variant,
                                         (unsigned long long)size, (unsigned long long)(24 + len));
@@ -159,7 +164,7 @@ static int check_encode(const uint8_t *items, uint64_t n, const uint8_t *data, c
     else {
         uint8_t *out = buffer(size);
         wr64(out, size);
-        st = CALL(F_ENCODE, rlp_encode(items, data, scr, out));
+        st = CALL(F_ENCODE, rlp_encode, items, data, scr, out);
         if (st != RLP_OK) snprintf(why_text, sizeof why_text, "%s: encode status %llu", variant, (unsigned long long)st);
         else if (rd64(out) != size || rd64(out + 8) != 24 || rd64(out + 16) != len)
             snprintf(why_text, sizeof why_text, "%s: encode header", variant);
@@ -178,14 +183,14 @@ static int check_encode(const uint8_t *items, uint64_t n, const uint8_t *data, c
 static int check_small(const uint8_t *items, uint64_t n, const uint8_t *data, uint64_t len, const char **why) {
     uint64_t ssize, size = 0, st;
     uint8_t *scr = scratch_buffer(n - 1, &ssize);
-    st = CALL(F_ENCODE_SIZE, rlp_encode_size(items, data, scr, &size));
+    st = CALL(F_ENCODE_SIZE, rlp_encode_size, items, data, scr, &size);
     if (st != RLP_BUFFER_TOO_SMALL) *why = "encode_size with a short scratch did not refuse";
     else if (!guard_ok(scr, ssize)) *why = "encode_size wrote past a short scratch";
     else {
         uint64_t osize = 24 + len;
         uint8_t *out = buffer(osize);
         wr64(out, osize);
-        st = CALL(F_ENCODE, rlp_encode(items, data, scr, out));
+        st = CALL(F_ENCODE, rlp_encode, items, data, scr, out);
         if (st != RLP_BUFFER_TOO_SMALL) *why = "encode with a short scratch did not refuse";
         else if (!guard_ok(scr, ssize) || !guard_ok(out, osize)) *why = "encode wrote past a short scratch";
         free(out);
@@ -197,7 +202,7 @@ static int check_small(const uint8_t *items, uint64_t n, const uint8_t *data, ui
     uint64_t osize = 24 + len - 1;
     uint8_t *out = buffer(osize);
     wr64(out, osize);
-    st = CALL(F_ENCODE, rlp_encode(items, data, scr, out));
+    st = CALL(F_ENCODE, rlp_encode, items, data, scr, out);
     if (st != RLP_BUFFER_TOO_SMALL) *why = "encode with a short output did not refuse";
     else if (!guard_ok(out, osize) || !guard_ok(scr, ssize)) *why = "encode wrote past a short output";
     free(out);
@@ -210,7 +215,7 @@ static int run_valid(const uint8_t *enc, uint64_t len, const uint8_t *want, uint
     uint8_t *bl = bytelist(enc, len, 32, 7, &esize);
     uint8_t *items = items_buffer(n, &isize);
     int ok = 0;
-    uint64_t st = CALL(F_DECODE, rlp_decode(bl, items));
+    uint64_t st = CALL(F_DECODE, rlp_decode, bl, items);
     if (st != RLP_OK) {
         snprintf(why_text, sizeof why_text, "decode status %llu", (unsigned long long)st);
         *why = why_text;
@@ -223,7 +228,7 @@ static int run_valid(const uint8_t *enc, uint64_t len, const uint8_t *want, uint
     if (ok) {
         uint64_t ssize;
         uint8_t *small = items_buffer(n - 1, &ssize);
-        st = CALL(F_DECODE, rlp_decode(bl, small));
+        st = CALL(F_DECODE, rlp_decode, bl, small);
         if (st != RLP_BUFFER_TOO_SMALL) ok = 0, *why = "decode with one record short did not refuse";
         else if (!guard_ok(small, ssize)) ok = 0, *why = "decode wrote past a short value";
         free(small);
@@ -279,7 +284,7 @@ static int run_reject(const uint8_t *enc, uint64_t len, uint64_t want, const cha
     uint64_t esize, isize;
     uint8_t *bl = bytelist(enc, len, 24, 0, &esize);
     uint8_t *items = items_buffer(len ? len : 1, &isize);
-    uint64_t st = CALL(F_DECODE, rlp_decode(bl, items));
+    uint64_t st = CALL(F_DECODE, rlp_decode, bl, items);
     int ok = 0;
     if (st != want) {
         snprintf(why_text, sizeof why_text, "decode status %llu, expected %llu", (unsigned long long)st,
@@ -379,7 +384,16 @@ int main(int argc, char **argv) {
         failed |= over;
         if (over) fn_failed_files[fn]++;
     }
-    /* One verdict for each function: every file that tests it passed, within the stack cap. */
+    for (int fn = 0; fn < F_COUNT; fn++) {
+        if (!stack_calls[fn]) continue;
+        if (abi_fault[fn])
+            printf("FAIL abi %s: kept state changed, mask 0x%016llx\n", fn_name[fn], (unsigned long long)abi_fault[fn]);
+        else
+            printf("PASS abi %s: kept registers, stack pointer and flags\n", fn_name[fn]);
+        failed |= abi_fault[fn] != 0;
+        if (abi_fault[fn]) fn_failed_files[fn]++;
+    }
+    /* One verdict for each function: every file that tests it passed, within the stack cap and the ABI. */
     for (int fn = 0; fn < F_COUNT; fn++)
         printf("FUNCTION %s %s\n", fn_name[fn], fn_files[fn] && !fn_failed_files[fn] ? "PASS" : "FAIL");
     return failed;

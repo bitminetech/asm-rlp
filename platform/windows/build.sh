@@ -21,6 +21,6 @@ llvm-ar rcsD "$out/libasm-rlp.a.new" "$out/rlp.o"
 mv "$out/libasm-rlp.a.new" "$out/libasm-rlp.a"
 
 /opt/llvm-mingw/bin/$mingw-clang $march -std=c11 -O2 -Wall -Wextra -Werror -static \
-    "$root/tests/runner/runner.c" "$out/libasm-rlp.a" -o "$out/runner.exe"
+    "$root/tests/runner/runner.c" -I"$root/platform/windows" "$root/tests/runner/abi_$isa.s" "$out/libasm-rlp.a" -o "$out/runner.exe"
 /opt/llvm-mingw/bin/$mingw-clang $march -std=c11 -O2 -Wall -Wextra -Werror -static \
     "$root/bench/bench.c" "$out/libasm-rlp.a" -ladvapi32 -o "$out/bench.exe"
