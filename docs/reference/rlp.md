@@ -240,7 +240,7 @@ rlp_measure(items, data, scratch) -> status
 
 ### Limits
 
-- Stack of its own: none. On x86-64 the call adds its 8 byte return address.
+- Stack of its own: 8 bytes on x86-64 (the return address), 0 bytes on ARM64 and RISC-V.
 
 ### ABI
 
