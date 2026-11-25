@@ -24,6 +24,7 @@ tests/runner/macos.sh ~/.cache/asm-rlp/vectors
 | `docker.sh` | Builds all 7 targets in Docker, then runs every file on Linux x86-64, ARM64 and RISC-V |
 | `macos.sh` | Links the runner on a Mac against the library that `docker.sh` built, then runs every file |
 | `tick_tables.py` | Writes the tick table of each function into its document, from the results of every target |
+| `heatmap.py` | Writes the verification heatmap into the README, from the tick tables |
 
 - Linux ISAs other than the host's run under QEMU user mode.
 - [.github/workflows/ci.yml](../../.github/workflows/ci.yml) runs every file on all 7 targets.
@@ -94,3 +95,11 @@ The record that `abi_call` reads and writes:
 - The calls come from `build/linux-<ISA>/calls.txt`, which [platform/check.py](../../platform/check.py) writes.
 - The `equal` cells stay empty: CI checks no proofs.
 - On a push to `main`, CI commits the tables when they change.
+
+## Heatmap
+
+- CI runs `heatmap.py` after `tick_tables.py`.
+- Each function is one cell, linked to its entry in `docs/reference/`.
+- A cell's colour is the number of ISAs whose proof cells are all ✅.
+- The images go in `docs/heatmap/`. The README block sits between the two heatmap markers.
+- On a push to `main`, CI commits the heatmap with the tables.

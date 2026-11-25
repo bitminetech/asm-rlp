@@ -2,7 +2,19 @@
 
 Recursive-Length Prefix (RLP) for Ethereum, in assembly.
 
-Standard: [asm-standard@2a19d3f](https://github.com/bitminetech/asm-standard/blob/2a19d3f7fa737af1c01720b6e891703e53a682aa/ARCHITECTURE.md)
+Standard: [asm-standard@185917b](https://github.com/bitminetech/asm-standard/blob/185917bedc54ff034e40069318add463c58f4db8/ARCHITECTURE.md)
+
+<!-- CI generates the verification heatmap here. -->
+<table><tr><td>
+
+<picture><source media="(prefers-color-scheme: dark)" srcset="docs/heatmap/header-dark.svg"><img src="docs/heatmap/header-light.svg" alt="asm-rlp formal verification: 0 of 4 functions proved"></picture>
+
+<picture><source media="(prefers-color-scheme: dark)" srcset="docs/heatmap/label-rlp-dark.svg"><img src="docs/heatmap/label-rlp-light.svg" alt="rlp"></picture><a href="docs/reference/rlp.md#function-rlp_decode"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/heatmap/cell-0-dark.svg"><img src="docs/heatmap/cell-0-light.svg" alt="rlp_decode" title="rlp_decode: Not proved"></picture></a><a href="docs/reference/rlp.md#function-rlp_encode_size"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/heatmap/cell-0-dark.svg"><img src="docs/heatmap/cell-0-light.svg" alt="rlp_encode_size" title="rlp_encode_size: Not proved"></picture></a><a href="docs/reference/rlp.md#function-rlp_encode"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/heatmap/cell-0-dark.svg"><img src="docs/heatmap/cell-0-light.svg" alt="rlp_encode" title="rlp_encode: Not proved"></picture></a><a href="docs/reference/rlp.md#function-rlp_measure"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/heatmap/cell-0-dark.svg"><img src="docs/heatmap/cell-0-light.svg" alt="rlp_measure" title="rlp_measure: Not proved"></picture></a>
+
+<picture><source media="(prefers-color-scheme: dark)" srcset="docs/heatmap/legend-dark.svg"><img src="docs/heatmap/legend-light.svg" alt="Legend"></picture>
+
+</td></tr></table>
+<!-- End of the verification heatmap. -->
 
 ## Reference
 
