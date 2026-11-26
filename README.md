@@ -27,7 +27,7 @@ Standard: [asm-standard@0db3e07](https://github.com/bitminetech/asm-standard/blo
 <!-- CI generates the CI panel here. -->
 <table><tr><td>
 
-<a href="https://github.com/bitminetech/asm-rlp/actions/runs/45585312808"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/readme/ci-dark.svg"><img src="docs/readme/ci-light.svg" alt="Latest CI run passed: 8 of 8 jobs passed"></picture></a>
+<a href="https://github.com/bitminetech/asm-rlp/actions/runs/45810813954"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/readme/ci-dark.svg"><img src="docs/readme/ci-light.svg" alt="Latest CI run passed: 8 of 8 jobs passed"></picture></a>
 
 </td></tr></table>
 <!-- End of the CI panel. -->
