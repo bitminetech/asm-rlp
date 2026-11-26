@@ -13,7 +13,7 @@
  *
  * Every library call goes through abi_call (tests/runner/abi_<ISA>.s). The
  * runner prints the most stack each function used, and fails when a call uses
- * more than the README cap or changes state that the ABI says it must keep.
+ * more than STACK_CAP, the stack limit, or changes state that the ABI says it must keep.
  */
 #include <stdint.h>
 #include <stdio.h>
@@ -43,7 +43,7 @@ enum { KIND_BYTES = 1, KIND_LIST = 2 };
  * reports the kept state that changed, and the bytes of stack the call used,
  * its return address included on x86-64.
  */
-#define STACK_CAP 128 /* README: stack per call */
+#define STACK_CAP 128 /* the stack limit (ARCHITECTURE.md section 6) */
 #define PAINT_BYTES (STACK_CAP + 4096)
 
 /* The record that abi_call reads and writes. The layout is in README.md. */

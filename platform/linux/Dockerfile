@@ -1,6 +1,6 @@
 # Build and Linux test image for asm-rlp.
 #
-# It holds the pinned build tools from the README (LLVM 23.1.5 and llvm-mingw
+# It holds the pinned build tools (LLVM 23.1.5 and llvm-mingw
 # 20261104), QEMU user mode for the Linux ISAs that are not native, and the
 # C libraries that the test runner links against for each Linux ISA.
 # It builds the library for every target, and runs the Linux tests.

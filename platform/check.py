@@ -9,8 +9,7 @@ after platform/build-all.sh. It exits with status 1 when any check fails.
 Declared interface:
 - Functions and roles: each "## Function" entry in docs/reference/ and its
   "- Role:" line.
-- Dependency functions: the "Functions used" column of the README
-  Dependencies table.
+- Dependency functions: the # uses lines of platform/deps.sh.
 
 Checks on the library archive of each of the 7 targets:
 - Exports: the global symbols are exactly the L2 functions.
@@ -34,6 +33,7 @@ It writes build/linux-<ISA>/calls.txt: one "caller callee" line for each call.
 """
 
 import glob
+import os
 import re
 import subprocess
 import sys
@@ -94,14 +94,14 @@ def declared_roles():
 
 
 def dependency_functions():
-    functions, inside = set(), False
-    with open("README.md", encoding="utf-8") as f:
-        for line in f:
-            if line.startswith("## "):
-                inside = line.strip() == "## Dependencies"
-            elif inside and line.startswith("|") and not line.startswith("|---") and "Functions used" not in line:
-                cells = [c.strip() for c in line.strip().strip("|").split("|")]
-                functions |= set(re.findall(r"`([^`]+)`", cells[-1]))
+    """The functions of the # uses lines of platform/deps.sh."""
+    functions = set()
+    if os.path.exists("platform/deps.sh"):
+        with open("platform/deps.sh", encoding="utf-8") as f:
+            for line in f:
+                m = re.match(r"# uses [^:]+: (.+)$", line.strip())
+                if m:
+                    functions |= set(m.group(1).split())
     return functions
 
 

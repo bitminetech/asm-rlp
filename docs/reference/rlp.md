@@ -1,5 +1,7 @@
 # RLP
 
+Encode and decode RLP.
+
 ## Contents
 
 ### Functions

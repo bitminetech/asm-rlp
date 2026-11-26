@@ -2,7 +2,15 @@
 
 Recursive-Length Prefix (RLP) for Ethereum, in assembly.
 
-Standard: [asm-standard@185917b](https://github.com/bitminetech/asm-standard/blob/185917bedc54ff034e40069318add463c58f4db8/ARCHITECTURE.md)
+Standard: [asm-standard@0db3e07](https://github.com/bitminetech/asm-standard/blob/0db3e07f58a9ba89c5b6a46925b179de265ee7e8/ARCHITECTURE.md)
+
+<!-- CI generates the supported platforms panel here. -->
+<table><tr><td>
+
+<picture><source media="(prefers-color-scheme: dark)" srcset="docs/readme/platforms-dark.svg"><img src="docs/readme/platforms-light.svg" alt="Supported platforms. Linux: x86-64, ARM64, RISC-V; Windows: x86-64, ARM64; macOS 11.0 or later: x86-64, ARM64"></picture>
+
+</td></tr></table>
+<!-- End of the supported platforms panel. -->
 
 <!-- CI generates the verification heatmap here. -->
 <table><tr><td>
@@ -16,61 +24,22 @@ Standard: [asm-standard@185917b](https://github.com/bitminetech/asm-standard/blo
 </td></tr></table>
 <!-- End of the verification heatmap. -->
 
-## Reference
+<!-- CI generates the CI panel here. -->
+<table><tr><td>
 
-| File | Covers |
-|---|---|
-| [docs/reference/rlp.md](docs/reference/rlp.md) | Encode and decode |
-| [include/rlp.inc](include/rlp.inc) | Constants |
+<a href="https://github.com/bitminetech/asm-rlp/actions/runs/45585312808"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/readme/ci-dark.svg"><img src="docs/readme/ci-light.svg" alt="Latest CI run passed: 8 of 8 jobs passed"></picture></a>
 
-## Targets
+</td></tr></table>
+<!-- End of the CI panel. -->
 
-| OS | ISAs |
-|---|---|
-| Linux | x86-64, ARM64, RISC-V |
-| Windows | x86-64, ARM64 |
-| macOS | x86-64, ARM64 |
+<!-- CI generates the docs panel here. -->
+<table><tr><td>
 
-## Build tools
+<picture><source media="(prefers-color-scheme: dark)" srcset="docs/readme/docs-header-dark.svg"><img src="docs/readme/docs-header-light.svg" alt="asm-rlp docs"></picture><br>
+<picture><source media="(prefers-color-scheme: dark)" srcset="docs/readme/docs-docs-dark.svg"><img src="docs/readme/docs-docs-light.svg" alt="Function docs"></picture><br>
+<a href="docs/reference/rlp.md"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/readme/docs-doc-rlp-dark.svg"><img src="docs/readme/docs-doc-rlp-light.svg" alt="RLP: Encode and decode RLP"></picture></a>
 
-| Used for | Tool |
-|---|---|
-| Library | LLVM 23.1.5, official release (`clang`, `llvm-ar`, `lld`) |
-| Windows test runner and bench | [llvm-mingw 20261104](https://github.com/mstorsjo/llvm-mingw/releases/tag/20261104) (LLVM 23.1.5) |
-| macOS test runner and bench | The host Xcode clang, because it needs the macOS SDK |
-| Build image | [platform/linux/Dockerfile](platform/linux/Dockerfile) on `debian:trixie-slim@sha256:a72b4433de1cf7d6bae0c4cee74d0547f58601a643b3375f070c51600d63b6b2` |
+<picture><source media="(prefers-color-scheme: dark)" srcset="docs/readme/docs-footer-dark.svg"><img src="docs/readme/docs-footer-light.svg" alt="Select a card to open its doc."></picture>
 
-## Tests
-
-| Item | Location |
-|---|---|
-| Export and frame check | [platform/check.py](platform/check.py) |
-| Vector generator | [tests/generator/](tests/generator/) |
-| Test runner | [tests/runner/](tests/runner/) |
-| Bench | [bench/](bench/) |
-
-## Target profile
-
-| ISA | Instructions |
-|---|---|
-| x86-64 | x86-64-v1 |
-| ARM64 | Armv8.0-A |
-| RISC-V | RV64GC |
-
-| Item | Value |
-|---|---|
-| macOS objects | Marked for macOS 11.0 or later |
-
-## Stack
-
-| Item | Value |
-|---|---|
-| Stack per call | At most 128 bytes, callees included |
-
-## Benchmark machines
-
-| ISA | CPU |
-|---|---|
-| x86-64 | The CPU of the GitHub runners `ubuntu-24.04`, `windows-2025` and `macos-15-intel`. Each bench run prints it. |
-| ARM64 | The CPU of the GitHub runners `ubuntu-24.04-arm`, `windows-11-arm` and `macos-15`, and Apple M series Macs. Each bench run prints it. |
-| RISC-V | Run only, under QEMU on `ubuntu-24.04-arm`. Its times are not measurements. |
+</td></tr></table>
+<!-- End of the docs panel. -->

@@ -74,3 +74,11 @@ build/macos-arm64/bench compare base.txt new.txt
 - `slower`: the same, the other way round.
 - `within noise`: anything else.
 - Run BASE and NEW on the same machine, one after the other.
+
+## Benchmark machines
+
+| ISA | CPU |
+|---|---|
+| x86-64 | The CPU of the GitHub runners `ubuntu-24.04`, `windows-2025` and `macos-15-intel`. Each bench run prints it. |
+| ARM64 | The CPU of the GitHub runners `ubuntu-24.04-arm`, `windows-11-arm` and `macos-15`, and Apple M series Macs. Each bench run prints it. |
+| RISC-V | Run only, under QEMU on `ubuntu-24.04-arm`. Its times are not measurements. |
